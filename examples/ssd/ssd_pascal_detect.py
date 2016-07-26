@@ -89,7 +89,8 @@ det_xmax = detections[0,0,:,5]
 det_ymax = detections[0,0,:,6]
 
 # Get detections with confidence higher than 0.6.
-top_indices = [i for i, conf in enumerate(det_conf) if conf >= 0.6]
+CONF = 0.6
+top_indices = [i for i, conf in enumerate(det_conf) if conf >= CONF]
 
 top_conf = det_conf[top_indices]
 top_label_indices = det_label[top_indices].tolist()
@@ -117,5 +118,6 @@ for i in xrange(top_conf.shape[0]):
     color = colors[label]
     currentAxis.add_patch(plt.Rectangle(*coords, fill=False, edgecolor=color, linewidth=2))
     currentAxis.text(xmin, ymin, display_txt, bbox={'facecolor':color, 'alpha':0.5})
+    currentAxis.set_title(('{} detections with p({} | box) >= {:.2f}').format(label_name, label_name, CONF), fontsize=14)
 
-plt.savefig("fish-bike_detection_overlay.png")
+plt.savefig("fish-bike_detection_overlay.jpg")
