@@ -520,7 +520,7 @@ void GetGroundTruth(const Dtype* gt_data, const int num_gt,
     int start_idx = i * 8;
     int item_id = gt_data[start_idx];
     if (item_id == -1) {
-      break;
+      continue;
     }
     int label = gt_data[start_idx + 1];
     CHECK_NE(background_label_id, label)
@@ -777,6 +777,9 @@ void GetDetectionResults(const Dtype* det_data, const int num_det,
   for (int i = 0; i < num_det; ++i) {
     int start_idx = i * 7;
     int item_id = det_data[start_idx];
+    if (item_id == -1) {
+      continue;
+    }
     int label = det_data[start_idx + 1];
     CHECK_NE(background_label_id, label)
         << "Found background label in the detection results.";
@@ -1124,6 +1127,8 @@ vector<cv::Scalar> GetColors(const int n) {
 }
 
 static clock_t start_clock = clock();
+static int cur_frame = 0;
+static cv::VideoWriter outputVideo("detections.avi", CV_FOURCC('M', 'J', 'P', 'G'), 20, cv::Size(1280, 720), true);
 
 template <typename Dtype>
 void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
@@ -1166,6 +1171,16 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
   int thickness = 2;
   int baseline = 0;
   char buffer[50];
+  
+  // cv::VideoWriter outputVideo("detections.avi", CV_FOURCC('M', 'J', 'P', 'G'), 20, cv::Size(1280, 720), true);
+  if (!outputVideo.isOpened()) {
+	LOG(FATAL) << "Could not open the output video for write! ";	
+  }
+  
+  string detections_output_prefix = "detections_";
+  string detections_output_suffix = ".png";
+  string detections_output_filename;
+  
   for (int i = 0; i < num_img; ++i) {
     cv::Mat image = images[i];
     // Show FPS.
@@ -1206,10 +1221,15 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
       }
     }
     cv::imshow("detections", image);
+    detections_output_filename = detections_output_prefix + std::to_string(cur_frame);
+    detections_output_filename = detections_output_filename + detections_output_suffix;
+    cv::imwrite(detections_output_filename, image);
+    outputVideo << image;
     if (cv::waitKey(1) == 27) {
       raise(SIGINT);
     }
   }
+  cur_frame++;
   start_clock = clock();
 }
 
