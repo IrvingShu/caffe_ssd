@@ -1128,7 +1128,6 @@ vector<cv::Scalar> GetColors(const int n) {
 
 static clock_t start_clock = clock();
 static int cur_frame = 0;
-static cv::VideoWriter outputVideo("detections.avi", CV_FOURCC('M', 'J', 'P', 'G'), 20, cv::Size(1280, 720), true);
 
 template <typename Dtype>
 void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
@@ -1172,13 +1171,8 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
   int baseline = 0;
   char buffer[50];
   
-  // cv::VideoWriter outputVideo("detections.avi", CV_FOURCC('M', 'J', 'P', 'G'), 20, cv::Size(1280, 720), true);
-  if (!outputVideo.isOpened()) {
-	LOG(FATAL) << "Could not open the output video for write! ";	
-  }
-  
   string detections_output_prefix = "detections_";
-  string detections_output_suffix = ".png";
+  string detections_output_suffix = ".bmp";
   string detections_output_filename;
   
   for (int i = 0; i < num_img; ++i) {
@@ -1224,7 +1218,6 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
     detections_output_filename = detections_output_prefix + std::to_string(cur_frame);
     detections_output_filename = detections_output_filename + detections_output_suffix;
     cv::imwrite(detections_output_filename, image);
-    outputVideo << image;
     if (cv::waitKey(1) == 27) {
       raise(SIGINT);
     }

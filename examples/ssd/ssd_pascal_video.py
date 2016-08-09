@@ -254,12 +254,16 @@ shutil.copy(test_net_file, job_dir)
 # Create job file.
 with open(job_file, 'w') as f:
   f.write('cd {}\n'.format(caffe_root))
+  f.write('rm -rf detections/\n')
   f.write('./build/tools/caffe test \\\n')
   f.write('--model="{}" \\\n'.format(test_net_file))
   f.write('--weights="{}" \\\n'.format(pretrain_model))
   f.write('--iterations="{}" \\\n'.format(test_iter))
   if solver_mode == P.Solver.GPU:
     f.write('--gpu {} 2>&1 | tee {}/{}.log\n'.format(gpus, job_dir, model_name))
+  f.write('ffmpeg -start_number 0 -i detections_%d.bmp -c:v huffyuv detections.avi\n')	
+  f.write('mkdir detections\n')
+  f.write('mv detections* detections\n')
 
 # Copy the python script to job_dir.
 py_file = os.path.abspath(__file__)
