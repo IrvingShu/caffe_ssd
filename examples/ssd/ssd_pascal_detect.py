@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # --------------------------------------------------------
 # Single-Shot MultiBox Detector
 # Copyright (c) 2016 Vimicro

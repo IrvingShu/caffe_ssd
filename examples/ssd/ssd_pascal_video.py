@@ -1,4 +1,11 @@
 from __future__ import print_function
+
+caffe_root = './'  # this file is expected to be in {caffe_root}/examples/ssd, and is expected to be run in {caffe_root}
+import os
+os.chdir(caffe_root)
+import sys
+sys.path.insert(0, 'python')
+
 import caffe
 from caffe.model_libs import *
 from google.protobuf import text_format
