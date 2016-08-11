@@ -59,6 +59,8 @@ run_soon = True
 resume_training = True
 # If true, Remove old model files.
 remove_old_models = False
+# If true, plot loss curve and evaluation curve.
+plot = True
 
 # The database file for training data. Created by data/VOC0712/create_data.sh
 train_data = "examples/VOC0712/VOC0712_trainval_lmdb"
@@ -521,6 +523,8 @@ with open(job_file, 'w') as f:
     f.write('--gpu {} 2>&1 | tee {}/{}.log\n'.format(gpus, job_dir, model_name))
   else:
     f.write('2>&1 | tee {}/{}.log\n'.format(job_dir, model_name))
+  if plot:
+    f.write('python ./tools/extra/loss_from_log.py {}/{}.log\n'.format(job_dir, model_name))
 
 # Copy the python script to job_dir.
 py_file = os.path.abspath(__file__)
