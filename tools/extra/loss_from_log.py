@@ -68,12 +68,12 @@ def main():
   # overlay
   plt.clf()
   fig, ax1 = plt.subplots()
-  ax1.plot(train_iteration, train_loss, 'k', label='Train loss')
+  ax1.plot(train_iteration, train_loss, 'b', label='Train loss')
   ax1.set_xlabel('Number of iterations')
-  ax1.set_ylabel('Loss')
+  ax1.set_ylabel('Loss', color='b')
   ax2 = ax1.twinx()
   ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
-  ax2.set_ylabel('Detection_eval')
+  ax2.set_ylabel('Detection_eval', color='r')
   plt.savefig('overlay.png')
   plt.show()
 
