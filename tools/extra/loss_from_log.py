@@ -54,14 +54,28 @@ def main():
   plt.ylabel('Loss')
   plt.xlabel('Number of iterations')
   plt.savefig('loss.png')
+  plt.show()
 
   # evaluation
   plt.clf()
   plt.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
-  plt.legend()
+  plt.legend(loc = 'lower right')
   plt.ylabel('Detection_eval')
   plt.xlabel('Number of iterations')
   plt.savefig('evaluation.png')
+  plt.show()
+  
+  # overlay
+  plt.clf()
+  fig, ax1 = plt.subplots()
+  ax1.plot(train_iteration, train_loss, 'k', label='Train loss')
+  ax1.set_xlabel('Number of iterations')
+  ax1.set_ylabel('Loss')
+  ax2 = ax1.twinx()
+  ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
+  ax2.set_ylabel('Detection_eval')
+  plt.savefig('overlay.png')
+  plt.show()
 
 def match_iteration(line):
   return re.search(r'Iteration (.*),', line)
