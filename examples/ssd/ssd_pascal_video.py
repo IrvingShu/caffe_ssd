@@ -56,6 +56,8 @@ caffe_root = os.getcwd()
 run_soon = True
 # The video file path
 video_file = "examples/videos/ILSVRC2015_train_00755001.mp4"
+video_name, ext = os.path.splitext(video_file)
+video_name = os.path.basename(video_name)
 
 # The parameters for the video demo
 
@@ -184,7 +186,7 @@ max_ratio = 95
 step = int(math.floor((max_ratio - min_ratio) / (len(mbox_source_layers) - 2)))
 min_sizes = []
 max_sizes = []
-for ratio in xrange(min_ratio, max_ratio + 1, step):
+for ratio in xrange(min_ratio, max_ratio, step):
   min_sizes.append(min_dim * ratio / 100.)
   max_sizes.append(min_dim * (ratio + step) / 100.)
 min_sizes = [min_dim * 10 / 100.] + min_sizes
@@ -198,7 +200,7 @@ if code_type == P.PriorBox.CENTER_SIZE:
 else:
   prior_variance = [0.1]
 flip = True
-clip = True
+clip = False
 
 # Check file.
 check_if_exist(label_map_file)
@@ -254,16 +256,16 @@ shutil.copy(test_net_file, job_dir)
 # Create job file.
 with open(job_file, 'w') as f:
   f.write('cd {}\n'.format(caffe_root))
-  f.write('rm -rf detections/\n')
+  f.write('rm -rf {}_detections/\n'.format(video_name))
   f.write('./build/tools/caffe test \\\n')
   f.write('--model="{}" \\\n'.format(test_net_file))
   f.write('--weights="{}" \\\n'.format(pretrain_model))
   f.write('--iterations="{}" \\\n'.format(test_iter))
   if solver_mode == P.Solver.GPU:
     f.write('--gpu {} 2>&1 | tee {}/{}.log\n'.format(gpus, job_dir, model_name))
-  f.write('ffmpeg -start_number 0 -i detections_%d.bmp -c:v huffyuv detections.avi\n')	
-  f.write('mkdir detections\n')
-  f.write('mv detections* detections\n')
+  f.write('ffmpeg -start_number 0 -i detections_%d.bmp -c:v libx264 -r 10 -s 1280x720 -pix_fmt yuv420p {}_detections.avi\n'.format(video_name))	
+  f.write('mkdir {}_detections\n'.format(video_name))
+  f.write('mv *detections* {}_detections\n'.format(video_name))
 
 # Copy the python script to job_dir.
 py_file = os.path.abspath(__file__)
