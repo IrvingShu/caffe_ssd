@@ -66,7 +66,6 @@ def main():
   plt.show()
   
   # overlay
-  plt.clf()
   fig, ax1 = plt.subplots()
   ax1.plot(train_iteration, train_loss, 'b', label='Train loss')
   ax1.set_xlabel('Number of iterations')
