@@ -14,24 +14,29 @@ def main():
 
   train_iteration = []
   train_loss      = []
+  lr              = []
   test_iteration  = []
   detection_eval  = []
 
   base_test_iter  = 0
   base_train_iter = 0
+  base_lr         = 0
 
   for log_file in log_files:
     with open(log_file, 'rb') as f:
       if len(train_iteration) != 0:
         base_train_iter = train_iteration[-1]
         base_test_iter = test_iteration[-1]
+        base_lr = lr[-1]
 
       for line in f:
         # TRAIN NET
         if strstr(line, 'Iteration') and strstr(line, 'lr'):
           matched = match_iteration(line)
           train_iteration.append(int(matched.group(1))+base_train_iter)
-
+          matched = match_lr(line)
+          lr.append(float(matched.group(1))+base_lr)
+		  
         elif strstr(line, 'Train net output'):
           matched = match_loss(line)
           train_loss.append(float(matched.group(1)))
@@ -47,13 +52,22 @@ def main():
           
   print("TRAIN", train_iteration, train_loss)
   print("TEST", test_iteration, detection_eval)
+  print("LEARNING_RATE", train_iteration, lr)
 
   # loss
-  plt.plot(train_iteration, train_loss, 'k', label='Train loss')
+  plt.plot(train_iteration, train_loss, 'b', label='Train loss')
   plt.legend()
   plt.ylabel('Loss')
   plt.xlabel('Number of iterations')
   plt.savefig('loss.png')
+  plt.show()
+  
+  # learning rate
+  plt.plot(train_iteration, lr, 'g', label='Learning rate')
+  plt.legend()
+  plt.ylabel('Learning rate')
+  plt.xlabel('Number of iterations')
+  plt.savefig('learning_rate.png')
   plt.show()
 
   # evaluation
@@ -65,7 +79,8 @@ def main():
   plt.savefig('evaluation.png')
   plt.show()
   
-  # overlay
+  # overlays
+  # 1 - training loss vs. detection evaluation
   fig, ax1 = plt.subplots()
   ax1.plot(train_iteration, train_loss, 'b', label='Train loss')
   ax1.set_xlabel('Number of iterations')
@@ -73,12 +88,37 @@ def main():
   ax2 = ax1.twinx()
   ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
   ax2.set_ylabel('Detection_eval', color='r')
-  plt.savefig('overlay.png')
+  plt.savefig('loss_eval.png')
   plt.show()
-
+  
+  # 2 - training loss vs. learning rate
+  fig, ax1 = plt.subplots()
+  ax1.plot(train_iteration, lr, 'g', label='Learning rate')
+  ax1.set_xlabel('Number of iterations')
+  ax1.set_ylabel('Learning rate', color='g')
+  ax2 = ax1.twinx()
+  ax2.plot(train_iteration, train_loss, 'b', label='Train loss')
+  ax2.set_ylabel('Loss', color='b')
+  plt.savefig('lr_loss.png')
+  plt.show()
+  
+  # 3 - learning rate vs. detection evaluation
+  fig, ax1 = plt.subplots()
+  ax1.plot(train_iteration, lr, 'g', label='Learning rate')
+  ax1.set_xlabel('Number of iterations')
+  ax1.set_ylabel('Learning rate', color='g')
+  ax2 = ax1.twinx()
+  ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
+  ax2.set_ylabel('Detection_eval', color='r')
+  plt.savefig('lr_eval.png')
+  plt.show()
+  
 def match_iteration(line):
   return re.search(r'Iteration (.*),', line)
 
+def match_lr(line):
+  return re.search(r'lr = (.*)', line)  
+  
 def match_loss(line):
   return re.search(r'mbox_loss = (.*) \(', line)
   
