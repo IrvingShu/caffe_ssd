@@ -20,8 +20,10 @@ namespace caffe {
 //      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
 //    - sigmoid: the effective learning rate follows a sigmod decay
 //      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
+//    - triangle: the learning rate policy which generates a series of triangles 
+//      return base_lr + (max_lr - base_lr) * max(0., (1. - |x|) / cycle)
 //
-// where base_lr, max_iter, gamma, step, stepvalue and power are defined
+// where base_lr, max_iter, gamma, step, stepvalue, power, start_lr_policy, and max_lr are defined
 // in the solver parameter protocol buffer, and iter is the current iteration.
 template <typename Dtype>
 Dtype SGDSolver<Dtype>::GetLearningRate() {
@@ -56,6 +58,17 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
     rate = this->param_.base_lr() * (Dtype(1.) /
         (Dtype(1.) + exp(-this->param_.gamma() * (Dtype(this->iter_) -
           Dtype(this->param_.stepsize())))));
+  } else if (lr_policy == "triangular") {
+    int itr = this->iter_ - this->param_.start_lr_policy();
+	int cycle = 1 + itr / (2 * this->param_.stepsize());
+    if (itr > 0) {
+      float x = (float) (itr - (2 * cycle - 1) * this->param_.stepsize());
+      x = x / this->param_.stepsize();
+      rate = this->param_.base_lr() + (this->param_.max_lr() - this->param_.base_lr()) 
+          * std::max(double(0), (1. - fabs(x)) / cycle);
+    } else {
+      rate = this->param_.base_lr();
+    }
   } else {
     LOG(FATAL) << "Unknown learning rate policy: " << lr_policy;
   }
