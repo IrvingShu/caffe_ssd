@@ -60,7 +60,6 @@ def main():
   plt.ylabel('Loss')
   plt.xlabel('Number of iterations')
   plt.savefig('loss.png')
-  plt.show()
   
   # learning rate
   plt.plot(train_iteration, lr, 'g', label='Learning rate')
@@ -68,7 +67,6 @@ def main():
   plt.ylabel('Learning rate')
   plt.xlabel('Number of iterations')
   plt.savefig('learning_rate.png')
-  plt.show()
 
   # evaluation
   plt.clf()
@@ -77,7 +75,6 @@ def main():
   plt.ylabel('Detection_eval')
   plt.xlabel('Number of iterations')
   plt.savefig('evaluation.png')
-  plt.show()
   
   # overlays
   # 1 - training loss vs. detection evaluation
@@ -89,7 +86,6 @@ def main():
   ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
   ax2.set_ylabel('Detection_eval', color='r')
   plt.savefig('loss_eval.png')
-  plt.show()
   
   # 2 - training loss vs. learning rate
   fig, ax1 = plt.subplots()
@@ -100,7 +96,6 @@ def main():
   ax2.plot(train_iteration, train_loss, 'b', label='Train loss')
   ax2.set_ylabel('Loss', color='b')
   plt.savefig('lr_loss.png')
-  plt.show()
   
   # 3 - learning rate vs. detection evaluation
   fig, ax1 = plt.subplots()
@@ -111,6 +106,16 @@ def main():
   ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
   ax2.set_ylabel('Detection_eval', color='r')
   plt.savefig('lr_eval.png')
+  
+  f, axarr = plt.subplots(3, sharex=True)
+  axarr[0].plot(train_iteration, train_loss)
+  axarr[0].set_title('Iters vs. Loss')
+  axarr[1].plot(train_iteration, lr, 'r')
+  axarr[1].set_title('Iters vs. Learning Rate')  
+  axarr[2].plot(test_iteration, detection_eval, 'g')
+  axarr[2].set_title('Iters vs. Detection Evaluation')  
+  plt.savefig('tri.png')  
+  
   plt.show()
   
 def match_iteration(line):
