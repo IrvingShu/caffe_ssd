@@ -1192,6 +1192,9 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
       string label_name = "Unknown";
       if (label_to_display_name.find(label) != label_to_display_name.end()) {
         label_name = label_to_display_name.find(label)->second;
+        if (label_name == (string)"Unknown") {
+          continue;
+        }
       }
       CHECK_LT(label, colors.size());
       const cv::Scalar& color = colors[label];
