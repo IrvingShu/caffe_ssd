@@ -1,9 +1,9 @@
-name: "CaffeNet"
+name: "ZFNet"
 layer {
   name: "data"
   type: "Input"
   top: "data"
-  input_param { shape: { dim: 10 dim: 3 dim: 227 dim: 227 } }
+  input_param { shape: { dim: 10 dim: 3 dim: 224 dim: 224 } }
 }
 layer {
   name: "conv1"
@@ -12,8 +12,8 @@ layer {
   top: "conv1"
   convolution_param {
     num_output: 96
-    kernel_size: 11
-    stride: 4
+    kernel_size: 7
+    stride: 2
   }
 }
 layer {
@@ -39,8 +39,8 @@ layer {
   bottom: "pool1"
   top: "norm1"
   lrn_param {
-    local_size: 5
-    alpha: 0.0001
+    local_size: 3
+    alpha: 0.0005
     beta: 0.75
   }
 }
@@ -79,8 +79,8 @@ layer {
   bottom: "pool2"
   top: "norm2"
   lrn_param {
-    local_size: 5
-    alpha: 0.0001
+    local_size: 3
+    alpha: 0.0005
     beta: 0.75
   }
 }
