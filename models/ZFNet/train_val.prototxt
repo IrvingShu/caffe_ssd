@@ -9,14 +9,22 @@ layer {
   }
   transform_param {
     mirror: true
-	crop_size: 224
-	mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
+    crop_size: 225
+    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
   }
+# mean pixel / channel-wise mean instead of mean image
+#  transform_param {
+#    crop_size: 225
+#    mean_value: 104
+#    mean_value: 117
+#    mean_value: 123
+#    mirror: true
+#  }
   data_param {
     source: "examples/ilsvrc12_train_lmdb"
-#	batch_size: 128
-	batch_size: 64
-	backend: LMDB
+    batch_size: 128
+#   batch_size: 64
+    backend: LMDB
   }
 }
 layer {
@@ -29,44 +37,48 @@ layer {
   }
   transform_param {
     mirror: false
-	crop_size: 224
-	mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
+    crop_size: 225
+    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
   }
+# mean pixel / channel-wise mean instead of mean image
+#  transform_param {
+#    crop_size: 227
+#    mean_value: 104
+#    mean_value: 117
+#    mean_value: 123
+#    mirror: false
+#  }
   data_param {
     source: "examples/ilsvrc12_val_lmdb"
-	batch_size: 50
-	backend: LMDB
+    batch_size: 50
+    backend: LMDB
   }
 }
-# stage I
 layer {
   name: "conv1"
   type: "Convolution"
   bottom: "data"
   top: "conv1"
-  param { # for neuron
+  param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
-  param { # for bias
+  param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   convolution_param {
     num_output: 96
-	kernel_size: 7
-	stride: 2
-	pad: 3
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    kernel_size: 7
+    stride: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -82,9 +94,8 @@ layer {
   top: "pool1"
   pooling_param {
     pool: MAX
-	kernel_size: 3
-	stride: 2
-	pad: 1
+    kernel_size: 3
+    stride: 2
   }
 }
 layer {
@@ -93,14 +104,11 @@ layer {
   bottom: "pool1"
   top: "norm1"
   lrn_param {
-    local_size: 3
-	alpha: 0.00005
-	beta: 0.75
-	norm_region: WITHIN_CHANNEL
-	engine: CAFFE
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
   }
 }
-# stage II
 layer {
   name: "conv2"
   type: "Convolution"
@@ -108,27 +116,26 @@ layer {
   top: "conv2"
   param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
   param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   convolution_param {
     num_output: 256
-	pad: 2
-	kernel_size: 5
-	stride: 2
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+#   pad: 2
+    stride: 2
+    kernel_size: 5
+#   group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
@@ -144,9 +151,8 @@ layer {
   top: "pool2"
   pooling_param {
     pool: MAX
-	kernel_size: 3
-	stride: 2
-	pad: 1
+    kernel_size: 3
+    stride: 2
   }
 }
 layer {
@@ -155,14 +161,11 @@ layer {
   bottom: "pool2"
   top: "norm2"
   lrn_param {
-    local_size: 3
-	alpha: 0.00005
-	beta: 0.75
-	norm_region: WITHIN_CHANNEL
-	engine: CAFFE
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
   }
 }
-# stage III
 layer {
   name: "conv3"
   type: "Convolution"
@@ -170,27 +173,25 @@ layer {
   top: "conv3"
   param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
   param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   convolution_param {
     num_output: 384
-	kernel_size: 3
-	pad: 1
-	stride: 1
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
@@ -199,7 +200,6 @@ layer {
   bottom: "conv3"
   top: "conv3"
 }
-# stage IV
 layer {
   name: "conv4"
   type: "Convolution"
@@ -207,27 +207,26 @@ layer {
   top: "conv4"
   param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
   param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   convolution_param {
     num_output: 384
-	kernel_size: 3
-	pad: 1
-	stride: 1
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    pad: 1
+    kernel_size: 3
+    stride: 1
+#   group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
@@ -236,7 +235,6 @@ layer {
   bottom: "conv4"
   top: "conv4"
 }
-# stage V
 layer {
   name: "conv5"
   type: "Convolution"
@@ -244,27 +242,26 @@ layer {
   top: "conv5"
   param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
   param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   convolution_param {
     num_output: 256
-	kernel_size: 3
-	pad: 1
-	stride: 1
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    pad: 1
+    kernel_size: 3
+    stride: 1
+#   group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
@@ -280,12 +277,10 @@ layer {
   top: "pool5"
   pooling_param {
     pool: MAX
-	kernel_size: 3
-	stride: 2
-	pad: 1
+    kernel_size: 3
+    stride: 2
   }
 }
-# stage VI
 layer {
   name: "fc6"
   type: "InnerProduct"
@@ -293,24 +288,22 @@ layer {
   top: "fc6"
   param {
     lr_mult: 1
-	decay_mult: 1
+    decay_mult: 1
   }
   param {
     lr_mult: 2
-	decay_mult: 0
+    decay_mult: 0
   }
   inner_product_param {
     num_output: 4096
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
@@ -328,24 +321,29 @@ layer {
     dropout_ratio: 0.5
   }
 }
-# stage VII
 layer {
   name: "fc7"
   type: "InnerProduct"
   bottom: "fc6"
   top: "fc7"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   inner_product_param {
     num_output: 4096
-	weight_filler {
-	  type: "constant"
-	  value: 0.01
-#     type: "gaussian"
-#	  std: 0.01
-	}
-	bias_filler {
-	  type: "constant"
-	  value: 0
-	}
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
@@ -379,24 +377,14 @@ layer {
   inner_product_param {
     num_output: 1000
     weight_filler {
-      type: "constant"
-      value: 0.01	  
-#     type: "gaussian"
-#     std: 0.01
+      type: "gaussian"
+      std: 0.01
     }
     bias_filler {
       type: "constant"
       value: 0
     }
   }
-}
-# stage VIII
-layer {
-  name: "loss"
-  type: "SoftmaxWithLoss"
-  bottom: "fc8"
-  bottom: "label"
-  top: "loss"
 }
 layer {
   name: "accuracy"
@@ -407,4 +395,11 @@ layer {
   include {
     phase: TEST
   }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "fc8"
+  bottom: "label"
+  top: "loss"
 }
