@@ -18,9 +18,10 @@ import shutil
 import stat
 import subprocess
 
-run_soon = False
+resume_training = True
+run_soon = True
 draw = True
-plot = False
+# plot = False
 
 def ZFNetBody(net, from_layer, for_training=True):
   net.conv1 = L.Convolution(net[from_layer], kernel_size=k_conv1, stride=s_conv1, num_output=d_conv1, pad=p_conv1, 
@@ -69,8 +70,8 @@ def ZFNetBody(net, from_layer, for_training=True):
                            weight_filler=dict(type='gaussian',std=0.01), bias_filler=dict(type='constant',std=0), 
                            param=[dict(lr_mult=1,decay_mult=1), dict(lr_mult=2,decay_mult=0)])
   if not for_training:
-    net.acc1 = L.Accuracy(net.fc8, net.label, accuracy_param=dict(top_k=1), include=dict(phase=caffe_pb2.Phase.Value('TEST')))
-    net.acc5 = L.Accuracy(net.fc8, net.label, accuracy_param=dict(top_k=5), include=dict(phase=caffe_pb2.Phase.Value('TEST')))
+    net.acc = L.Accuracy(net.fc8, net.label, include=dict(phase=caffe_pb2.Phase.Value('TEST')))
+    net.acc5 = L.Accuracy(net.fc8, net.label, include=dict(phase=caffe_pb2.Phase.Value('TEST')), accuracy_param=dict(top_k=5))
   
   net.loss = L.SoftmaxWithLoss(net.fc8, net.label)
   
@@ -92,30 +93,32 @@ test_net_file = "{}/test.prototxt".format(save_dir)
 deploy_net_file = "{}/deploy.prototxt".format(save_dir)
 solver_file = "{}/solver.prototxt".format(save_dir)
 snapshot_prefix = "{}/{}".format(snapshot_dir, model_name)
-job_file = "{}/{}.sh".format(job_dir, model_name)
+job_file = "{}/{}_score.sh".format(job_dir, model_name)
 train_net_graph = "{}/train.png".format(job_dir)
 test_net_graph = "{}/test.png".format(job_dir)
 deploy_net_graph = "{}/deploy.png".format(job_dir)
 
-# Find most recent snapshot.
 max_iter = 0
+# Find most recent snapshot.
 for file in os.listdir(snapshot_dir):
-  if file.endswith(".caffemodel"):
+  if file.endswith(".solverstate"):
     basename = os.path.splitext(file)[0]
     iter = int(basename.split("{}_iter_".format(model_name))[1])
     if iter > max_iter:
       max_iter = iter
 
-if max_iter == 0:
-  print("Cannot find snapshot in {}".format(snapshot_dir))
-  sys.exit()
+print('{}'.format(snapshot_dir))
+print('{}'.format(max_iter))
 
-pretrain_model = "{}_iter_{}.caffemodel".format(snapshot_prefix, max_iter)
+if resume_training:
+  if max_iter > 0:
+    train_src_param = '--snapshot="{}_iter_{}.solverstate" \\\n'.format(snapshot_prefix, max_iter)
+
 
 # model definition parameters
 # data layer
-train_data = "examples/ilsvrc12_train_lmdb"
-test_data = "examples/ilsvrc12_test_lmdb"
+train_data = "examples/imagenet/ilsvrc12_train_lmdb"
+test_data = "examples/imagenet/ilsvrc12_val_lmdb"
 mean_file = "data/ilsvrc12/imagenet_mean.binaryproto"
 train_batch_size = 128
 test_batch_size = 50
@@ -185,25 +188,20 @@ r_drop7 = 0.5
 k_ip8 = 1000
 
 # solver parameters
-# Evaluate on whole test set.
-num_test_images = 100000
-test_batch_size = 50
-test_iter = int(math.ceil(float(num_test_images) / test_batch_size))
-
 gpus = "0"
 solver_param = {
-  # 'base_lr': 0.005,
-  # 'lr_policy': "step",
-  # 'stepsize': 200000,
-  # 'weight_decay': 0.0005,
-  # 'gamma': 0.1,
-  # 'momentum': 0.9,
-  'max_iter': 0,
-  'snapshot_after_train': False,
+  'base_lr': 0.005,
+  'lr_policy': "step",
+  'stepsize': 200000,
+  'weight_decay': 0.0005,
+  'gamma': 0.1,
+  'momentum': 0.9,
+  'max_iter': 0, # no run when scoring a model
+  'snapshot': 20000,
   'solver_mode': P.Solver.GPU,
   'display': 20,
-  'test_iter': [test_iter],
-  'test_interval': 100000,
+  'test_iter': [2000],
+  'test_interval': 2000,
 }
 
 # Check file.
@@ -229,7 +227,7 @@ shutil.copy(train_net_file, job_dir)
 # Create test net
 test_net = caffe.NetSpec()
 test_net.data, test_net.label = L.Data(source=test_data, backend=P.Data.LMDB, batch_size=test_batch_size, ntop=2, 
-                                       transform_param=dict(crop_size=crop_size, mean_file=mean_file, mirror=False), 
+                                       transform_param=dict(crop_size=crop_size, mean_file=mean_file, mirror=True), 
                                        include=dict(phase=caffe_pb2.Phase.Value('TEST')))
 
 ZFNetBody(test_net, from_layer='data', for_training=False)
@@ -240,17 +238,17 @@ with open(test_net_file, 'w') as f:
 shutil.copy(test_net_file, job_dir)
 
 # Create deploy net
-# deploy_net = train_net
+deploy_net = train_net
 
-# with open(deploy_net_file, 'w') as f:
-  # net_param = deploy_net.to_proto()
-  # del net_param.layer[0]
-  # del net_param.layer[-1]
-  # net_param.name = '{}_deploy'.format(model_name)  
-  # net_param.input.extend(['data'])
-  # net_param.input_shape.extend([caffe_pb2.BlobShape(dim=[1, 3, crop_size, crop_size])])
-  # print(net_param, file=f)
-# shutil.copy(deploy_net_file, job_dir)
+with open(deploy_net_file, 'w') as f:
+  net_param = deploy_net.to_proto()
+  del net_param.layer[0]
+  del net_param.layer[-1]
+  net_param.name = '{}_deploy'.format(model_name)  
+  net_param.input.extend(['data'])
+  net_param.input_shape.extend([caffe_pb2.BlobShape(dim=[1, 3, crop_size, crop_size])])
+  print(net_param, file=f)
+shutil.copy(deploy_net_file, job_dir)
 
 # Create solver
 solver = caffe_pb2.SolverParameter(train_net=train_net_file, test_net=[test_net_file], snapshot_prefix=snapshot_prefix, **solver_param)
@@ -266,14 +264,12 @@ with open(job_file, 'w') as f:
     f.write('python ./python/draw_net.py {} {} \n'.format(train_net_file, train_net_graph))
     f.write('python ./python/draw_net.py {} {} \n'.format(test_net_file, test_net_graph))
     f.write('python ./python/draw_net.py {} {} \n'.format(deploy_net_file, deploy_net_graph))
-  f.write('./build/tools/caffe test \\\n')
+  f.write('./build/tools/caffe train \\\n')
   f.write('--solver="{}" \\\n'.format(solver_file))
-  f.write('--model="{}" \\\n'.format(test_net_file))
-  f.write('--weights="{}" \\\n'.format(pretrain_model))
-  # if max_iter > 0: 
-    # f.write(train_src_param)
+  if max_iter > 0: 
+    f.write(train_src_param)
   if solver_param['solver_mode'] == P.Solver.GPU:
-    f.write('--gpu {} 2>&1 | tee {}/{}.log\n'.format(gpus, job_dir, model_name))
+    f.write('--gpu {} 2>&1 | tee {}/{}_score.log\n'.format(gpus, job_dir, model_name))
   else:
     f.write('2>&1 | tee {}/{}.log\n'.format(job_dir, model_name))
 
