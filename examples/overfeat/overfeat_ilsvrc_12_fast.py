@@ -72,6 +72,7 @@ def OverFeatBody(net, from_layer, for_training=True):
                            param=[dict(lr_mult=1,decay_mult=1), dict(lr_mult=2,decay_mult=0)])
   if not for_training:
     net.acc = L.Accuracy(net.fc8, net.label, include=dict(phase=caffe_pb2.Phase.Value('TEST')))
+    net.acc5 = L.Accuracy(net.fc8, net.label, accuracy_param=dict(top_k=5), include=dict(phase=caffe_pb2.Phase.Value('TEST')))
   
   net.loss = L.SoftmaxWithLoss(net.fc8, net.label)
   
@@ -100,10 +101,10 @@ deploy_net_graph = "{}/deploy.png".format(job_dir)
 
 # model definition parameters
 # data layer
-train_data = "examples/imagenet/ilsvrc12_train_lmdb"
-test_data = "examples/imagenet/ilsvrc12_val_lmdb"
+train_data = "examples/ilsvrc12_train_lmdb"
+test_data = "examples/ilsvrc12_val_lmdb"
 mean_file = "data/ilsvrc12/imagenet_mean.binaryproto"
-train_batch_size = 128
+train_batch_size = 64
 test_batch_size = 50
 crop_size = 221
 
@@ -171,7 +172,7 @@ r_drop7 = 0.5
 k_ip8 = 1000
 
 # solver parameters
-gpus = "0,1"
+gpus = "0"
 gpulist = gpus.split(",")
 num_gpus = len(gpulist)
 
@@ -190,17 +191,13 @@ if num_gpus > 0:
 
 solver_param = {
   'base_lr': 0.0005,
-  'lr_policy': "multistep",
-  'stepvalue': [1200000],
-  'stepvalue': [2000000],
-  'stepvalue': [2400000],
-  'stepvalue': [2800000],
-  'stepvalue': [3200000],
-  'weight_decay': 0.0005,
+  'lr_policy': "step",
+  'stepsize': 600000,           #300000
+  'weight_decay': 0.00001,
   'gamma': 0.5,
   'momentum': 0.6,
-  'max_iter': 3600000,
-  'snapshot': 100000,
+  'max_iter': 1800000,          #900000
+  'snapshot': 200000,
   'solver_mode': P.Solver.GPU,
   'display': 20,
   'test_iter': [2000],
