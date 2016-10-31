@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Fan Yang, 2016/08/11
+# Modified base on Martin Kersner's script: https://github.com/martinkersner/train-CRF-RNN/blob/master/loss_from_log.py
 
 from __future__ import print_function
 import sys
@@ -16,18 +16,20 @@ def main():
   train_loss      = []
   lr              = []
   test_iteration  = []
-  detection_eval  = []
+  test_loss       = []
+  test_accuracy   = []
+
+  top1_accuracy   = []
+  top5_accuracy   = []
 
   base_test_iter  = 0
   base_train_iter = 0
-  base_lr         = 0
 
   for log_file in log_files:
     with open(log_file, 'rb') as f:
       if len(train_iteration) != 0:
         base_train_iter = train_iteration[-1]
         base_test_iter = test_iteration[-1]
-        base_lr = lr[-1]
 
       for line in f:
         # TRAIN NET
@@ -36,99 +38,78 @@ def main():
           train_iteration.append(int(matched.group(1)))
           matched = match_lr(line)
           lr.append(float(matched.group(1)))
-		  
+
         elif strstr(line, 'Train net output'):
           matched = match_loss(line)
           train_loss.append(float(matched.group(1)))
 
         # TEST NET
-        elif strstr(line, 'Testing net'):
+        elif strstr(line, 'Iteration') and strstr(line, 'Testing net'):
           matched = match_iteration(line)
           test_iteration.append(int(matched.group(1)))
 
-        elif strstr(line, 'Test net output'):
-          matched = match_evaluation(line)
-          detection_eval.append(float(matched.group(1)))
-        
-  # print("TRAIN", train_iteration, train_loss)
-  # print("TEST", test_iteration, detection_eval)
-  # print("LEARNING_RATE", train_iteration, lr)
+        elif strstr(line, 'Test net output #2'):
+          matched = match_loss(line)
+          test_loss.append(float(matched.group(1)))
+
+        elif strstr(line, 'Test net output #0'):
+          matched = match_top1(line)
+          top1_accuracy.append(float(matched.group(1)))
+
+        elif strstr(line, 'Test net output #1'):
+          matched = match_top5(line)
+          top5_accuracy.append(float(matched.group(1)))
+
+  print("TRAIN", train_iteration, train_loss)
+  print("TEST", test_iteration, test_loss)
+  print("LEARNING RATE", train_iteration, lr)
+  print("TOP1_ACCURACY", test_iteration, top1_accuracy)
+  print("TOP5_ACCURACY", test_iteration, top5_accuracy)
 
   # loss
-  plt.plot(train_iteration, train_loss, 'b', label='Train loss')
+  plt.plot(train_iteration, train_loss, 'k', label='Train loss')
+  plt.plot(test_iteration, test_loss, 'r', label='Test loss')
   plt.legend()
   plt.ylabel('Loss')
   plt.xlabel('Number of iterations')
   plt.savefig('loss.png')
-  
+
+  plt.show()
+
   # learning rate
+  plt.clf()
   plt.plot(train_iteration, lr, 'g', label='Learning rate')
   plt.legend()
   plt.ylabel('Learning rate')
   plt.xlabel('Number of iterations')
-  plt.savefig('learning_rate.png')
+  plt.savefig('lr.png')
 
-  # evaluation
-  plt.clf()
-  plt.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
-  plt.legend(loc = 'lower right')
-  plt.ylabel('Detection_eval')
-  plt.xlabel('Number of iterations')
-  plt.savefig('evaluation.png')
-  
-  # overlays
-  # 1 - training loss vs. detection evaluation
-  fig, ax1 = plt.subplots()
-  ax1.plot(train_iteration, train_loss, 'b', label='Train loss')
-  ax1.set_xlabel('Number of iterations')
-  ax1.set_ylabel('Loss', color='b')
-  ax2 = ax1.twinx()
-  ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
-  ax2.set_ylabel('Detection_eval', color='r')
-  plt.savefig('loss_eval.png')
-  
-  # 2 - training loss vs. learning rate
-  fig, ax1 = plt.subplots()
-  ax1.plot(train_iteration, lr, 'g', label='Learning rate')
-  ax1.set_xlabel('Number of iterations')
-  ax1.set_ylabel('Learning rate', color='g')
-  ax2 = ax1.twinx()
-  ax2.plot(train_iteration, train_loss, 'b', label='Train loss')
-  ax2.set_ylabel('Loss', color='b')
-  plt.savefig('lr_loss.png')
-  
-  # 3 - learning rate vs. detection evaluation
-  fig, ax1 = plt.subplots()
-  ax1.plot(train_iteration, lr, 'g', label='Learning rate')
-  ax1.set_xlabel('Number of iterations')
-  ax1.set_ylabel('Learning rate', color='g')
-  ax2 = ax1.twinx()
-  ax2.plot(test_iteration, detection_eval, 'r', label='Detection evaluation')
-  ax2.set_ylabel('Detection_eval', color='r')
-  plt.savefig('lr_eval.png')
-  
-  f, axarr = plt.subplots(3, sharex=True)
-  axarr[0].plot(train_iteration, train_loss)
-  axarr[0].set_title('Iters vs. Loss')
-  axarr[1].plot(train_iteration, lr, 'r')
-  axarr[1].set_title('Iters vs. Learning Rate')  
-  axarr[2].plot(test_iteration, detection_eval, 'g')
-  axarr[2].set_title('Iters vs. Detection Evaluation')  
-  plt.savefig('tri.png')  
-  
   plt.show()
   
+  # evaluation
+  plt.clf()
+  plt.plot(test_iteration, top1_accuracy, 'm', label='Top-1 accuracy')
+  plt.plot(test_iteration, top5_accuracy, 'c', label='Top-5 accuracy')
+  plt.legend(loc=0)
+  plt.savefig('evaluation.png')
+
+  plt.show()
+
+
 def match_iteration(line):
   return re.search(r'Iteration (.*),', line)
 
-def match_lr(line):
-  return re.search(r'lr = (.*)', line)  
-  
 def match_loss(line):
-  return re.search(r'mbox_loss = (.*) \(', line)
+  return re.search(r'loss = (.*) \(', line)
+
+def match_lr(line):
+  return re.search(r'lr = (.*)', line)
+
+def match_top1(line):
+  return re.search(r'acc = (.*)', line)
   
-def match_evaluation(line):
-  return re.search(r'detection_eval = (.*)', line)
+def match_top5(line):
+  return re.search(r'acc5 = (.*)', line)
 
 def process_arguments(argv):
   if len(argv) < 2:
